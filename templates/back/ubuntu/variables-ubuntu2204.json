@@ -1,0 +1,17 @@
+{
+  "_comment": "Modify the following variables to suit your needs,Build with `packer build -var-file variables-ubuntu2204.json ubuntu-22.04-live-amd64-virtualbox.json`",
+  "default_vm_name": "ubuntu-22.04.1-x86_64",
+  "guest_additions_url": "",
+  "local_iso_urls": "D:\\workFiles\\VirtualFiles\\isofiles\\ubuntu-22.04.1-live-server-amd64.iso",
+  "local_iso_checksum": "10f19c5b2b8d6db711582e0e27f5116296c34fe4b313ba45f9b201a5007056cb",
+  "http_directory": "{{pwd}}/http",
+  "build_directory": "../builds",
+  "box_basename": "ubuntu-22.04",
+  "headless": "",
+  "cpus": "2",
+  "memory": "2048",
+  "disk_size": "40960",
+  "qemu_display": "none",
+  "ssh_username": "echoxu",
+  "ssh_password": "Xjh@911128"
+}

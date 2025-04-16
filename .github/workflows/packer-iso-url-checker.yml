@@ -1,0 +1,38 @@
+---
+on:
+  workflow_call:
+    inputs:
+      EXCLUDE_REGEX:
+        required: true
+        type: string
+
+jobs:
+  enumerate_pkrvars:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Enumerate iso
+        env:
+          EXCLUDE: ${{ inputs.SUPERMARKET_URL }}
+        shell: bash
+        run: |
+          mapfile -t < <(find os_pkrvars -name "*.pkrvars.hcl" | grep -Ev '(${{ env.EXCLUDE }})')
+          echo "matrix=$(jq -cRn '[inputs]' < <( (( ${#MAPFILE[@]} )) && printf '%s\n' "${MAPFILE[@]}"))" >> "$GITHUB_OUTPUT"
+        id: enumerate_pkrvars
+    outputs:
+      matrix: ${{ steps.enumerate_pkrvars.outputs.matrix }}
+
+  iso-availability:
+    needs: enumerate_pkrvars
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        template: ${{ fromJson(needs.enumerate_pkrvars.outputs.matrix) }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@main
+      - name: iso-availability
+        shell: pwsh
+        run: Invoke-RestMethod -Method Head -Verbose -Uri $(Get-Content '${{ matrix.template }}' | ConvertFrom-StringData).iso_url.Trim('"')

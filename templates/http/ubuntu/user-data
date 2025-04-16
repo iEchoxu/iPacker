@@ -1,0 +1,52 @@
+#cloud-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: ubuntu-server
+    password: "$6$1nd5vPtlpWQC1O0c$oxo.IR4NqSm8dTQwcnVLGt/PsB05zY0OWm.GBHX/ODJQPnw9jPwTxd15lF27PNuMPiBT7lbCLe.UuDtTYtXSe1"
+    username: echoxu
+  early-commands:
+    # otherwise packer tries to connect and exceed max attempts:
+    - systemctl stop ssh.service
+    - systemctl stop ssh.socket
+  # packages: [openssh-server, curl, vim, zip, unzip, wget]
+  ssh:
+    install-server: true
+    authorized-keys:
+      [
+        ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDWfAdKCiGB2jIBWhjIHP9LD390LfoYK/p+OpPhE6egLLXrTcW3ehT0FJtircJknuLFeeHLxylt5nrByhl+G4z2udwVFb2TsjwdAIWLaRSR3S8ILOJkPs/vUekyLSDf12ALnBe8dPcX2d00Y53Z5ibZADHQgwIPlZQJNv/7LqmiS20t67TptBnqkWua+h0Q8E3qlTo4BPNTgjIIWDW9k5Nr5BT5PfIEpfgEIncNqLhnt0gvFCWKaexlCTlos0IIt9RoCxtGyDc2uADvLECm9/uVgHHns+AI5FNHgeQEtEZvXOp3nLODtB5v1V98opYfnr4I2nfF5f1GCxEs5zeH975yN1+zKjMsSrhciE+q6yMFJueDFTdN4+BHVwVboJMfSt+sU8BIEZxVDs0qZ35F0b4/c1SVbedl3q+DKwMCEHvt+sHzud88I0jowInnR4tITBQWfuqSsB8BZAhrrAMa7kc61Wnvgl56/uatYeDg0BnNGVMGP+GqgPBzBseJ0sahnYA8XxnSzpCZVnr/w+a2ziX3D/KV1r7LBfLQpNHCN7ZQt9QhTk8dInGRg/IFggSwIFP3j21BZUPis2WhTTgXmIwvVAHAYUQiwbnCoobgOvawZMFyJzkpCgFptwy5ipGUvuIZCVfNbMl1FO4sPZAB4XblPUls+4418xJMduGGeFozaw== ssh key for packer,
+      ]
+    allow-pw: true
+  storage:
+    layout:
+      name: direct
+  apt:
+    disable_components: []
+    geoip: true
+    preserve_sources_list: false
+    primary:
+      - arches:
+          - amd64
+          - i386
+        uri: http://mirrors.aliyun.com/ubuntu/
+      - arches:
+          - default
+        uri: http://ports.ubuntu.com/ubuntu-ports
+  user-data:
+    timezone: Asia/Shanghai
+  late-commands:
+    - echo 'echoxu ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/echoxu
+    - curtin in-target --target=/target -- chmod 440 /etc/sudoers.d/echoxu
+    # Enable hyper-v daemons only if using hyper-v virtualization
+    - |
+      if [ $(virt-what) == "hyperv" ]; then
+        apt-get update && apt-get install -y hyperv-daemons linux-tools-$(uname -r) linux-cloud-tools-$(uname -r) linux-cloud-tools-common cifs-utils
+        systemctl enable hypervvssd
+        systemctl enable hypervkvpd
+        systemctl start hypervvssd
+        systemctl start hypervkvpd
+      fi
+    - |
+      if [ -f /target/etc/netplan/00-installer-config.yaml ]; then
+        'sed -i "s/dhcp4: true/&\n      dhcp-identifier: mac/" /target/etc/netplan/00-installer-config.yaml'
+      fi

@@ -1,0 +1,114 @@
+{
+    "_comment": "Basic templates for packer,Build with `packer build -var-file variables-ubuntu2204.json ubuntu-22.04-live-amd64-virtualbox.json | tee packer_ubuntu_base_output.txt `",
+    "builders": [
+        {
+            "boot_command": [
+                "<esc><esc><esc>",
+                "<enter><wait>",
+                "/casper/vmlinuz ",
+                "initrd=/casper/initrd ",
+                "autoinstall ",
+                "<enter>"
+            ],
+            "boot_wait": "5s",
+            "cpus": "{{ user `cpus` }}",
+            "disk_size": "{{user `disk_size`}}",
+            "cd_files": ["./http/meta-data", "./http/user-data"],
+            "cd_label": "cidata",
+            "headless": "{{ user `headless` }}",
+            "http_directory": "{{user `http_directory`}}",
+            "iso_checksum": "{{user `local_iso_checksum`}}",
+            "iso_url": "{{user `local_iso_urls`}}",
+            "memory": "{{ user `memory` }}",
+            "output_directory": "{{ user `build_directory` }}/packer-{{user `default_vm_name`}}-virtualbox",
+            "shutdown_command": "echo {{user `ssh_password`}} | sudo -S shutdown -P now",
+            "ssh_port": 22,
+            "ssh_timeout": "60m",
+            "ssh_username": "{{user `ssh_username`}}",
+            "ssh_password": "{{user `ssh_password`}}",
+            "ssh_handshake_attempts": "2000",
+            "nested_virt": true,
+            "rtc_time_base": "local",
+            "gfx_controller": "vmsvga",
+            "gfx_vram_size": "16",
+            "gfx_accelerate_3d": true,
+            "type": "virtualbox-iso",
+            "guest_os_type": "RedHat_64",
+            "hard_drive_interface": "sata",
+            "virtualbox_version_file": ".vbox_version",
+            "guest_additions_path": "VBoxGuestAdditions_{{.Version}}.iso",
+            "guest_additions_url": "{{user `guest_additions_url`}}",
+            "vm_name": "{{ user `default_vm_name` }}",
+            "vboxmanage": [
+                [
+                  "modifyvm",
+                  "{{.Name}}",
+                  "--vrde",
+                  "off"
+                ],
+                [
+                  "modifyvm",
+                  "{{.Name}}",
+                  "--recording",
+                  "off"
+                ],
+                [
+                  "modifyvm",
+                  "{{.Name}}",
+                  "--clipboard",
+                  "bidirectional"
+                ],
+                [
+                  "modifyvm",
+                  "{{.Name}}",
+                  "--draganddrop",
+                  "bidirectional"
+                ],
+                [
+                  "storagectl",
+                  "{{.Name}}",
+                  "--name",
+                  "SATA Controller",
+                  "--hostiocache",
+                  "on"
+                ],
+                [
+                  "storageattach",
+                  "{{.Name}}",
+                  "--storagectl",
+                  "SATA Controller",
+                  "--port",
+                  "0",
+                  "--nonrotational",
+                  "on"
+                ]
+              ]
+        }
+
+    ],
+    "sensitive-variables": [
+        "ssh_password",
+        "ssh_pubkey"
+    ],
+    "post-processors": [
+        {
+            "type": "vagrant",
+            "output": "{{user `build_directory`}}/{{user `box_basename`}}.{{.Provider}}.box",
+            "vagrantfile_template": "{{pwd}}/../_common/for_packer/ubuntu2204-virtualbox/Vagrantfile",
+            "include": "{{pwd}}/../_common/for_packer/ubuntu2204-virtualbox/metadata.json"
+        }
+    ],
+    "provisioners": [
+        {
+            "execute_command": "{{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
+            "expect_disconnect": true,
+            "scripts": [
+                "{{template_dir}}/scripts/base.sh",
+                "{{template_dir}}/scripts/networking.sh",
+                "{{template_dir}}/scripts/cleanup.sh",
+                "{{template_dir}}/scripts/minimize.sh"
+            ],
+            "type": "shell"
+        }
+    ]
+}

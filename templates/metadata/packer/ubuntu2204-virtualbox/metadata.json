@@ -1,0 +1,6 @@
+{
+  "name": "ubuntu/2204",
+  "description": "This box contains ubuntu 2204.1 64-bit for virtualbox.",
+  "version": "2204.1",
+  "provider":"virtualbox"
+}

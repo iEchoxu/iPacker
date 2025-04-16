@@ -1,0 +1,41 @@
+---
+on:
+  pull_request:
+
+concurrency:
+  group: ci-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  packer-iso-check:
+    uses: ./.github/workflows/packer-iso-url-checker.yml
+    with:
+      EXCLUDE_REGEX: "amazonlinux-2.*|rhel.*|sles.*|solaris.*|windows-11-aarch64.*,macos-*"
+
+  packer-lint:
+    uses: ./.github/workflows/packer-lint.yml
+    secrets: inherit
+
+  pkr-bld-virtualbox-x64:
+    uses: ./.github/workflows/pkr-bld-virtualbox-x64.yml
+    secrets: inherit
+
+  # pkr-bld-docker-x64:
+  #   uses: ./.github/workflows/pkr-bld-docker-x64.yml
+  #   secrets: inherit
+
+  check_jobs_pass:
+    if: always()
+    needs:
+      - packer-lint
+    runs-on: Ubuntu-latest
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@main
+        with:
+          allowed-failures:
+          allowed-skips: ${{ toJSON(needs) }}
+          jobs: ${{ toJSON(needs) }}
+#  pkr-bld-parallels-test:
+#    uses: ./.github/workflows/test-pkr-bld-parallels.yml
+#    secrets: inherit
