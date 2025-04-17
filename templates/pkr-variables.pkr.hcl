@@ -254,6 +254,11 @@ variable "vm_name" {
   default = null
 }
 
+variable "home_dir" {
+  type    = string
+  default = null
+}
+
 # builder common block
 variable "scripts" {
   type    = list(string)

@@ -78,6 +78,8 @@ locals {
     )
   ) : var.scripts
   source_names = [for source in var.sources_enabled : trimprefix(source, "source.")]
+
+  home_dir = var.home_dir == null ? "/home/${var.ssh_username}" : "/home/vagrant"
 }
 
 # https://www.packer.io/docs/templates/hcl_templates/blocks/build
@@ -88,21 +90,21 @@ build {
   # Linux Shell scipts
   provisioner "shell" {
     environment_vars = var.os_name == "freebsd" ? [
-      "HOME_DIR=/home/vagrant",
+      "HOME_DIR=${local.home_dir}",
       "http_proxy=${var.http_proxy}",
       "https_proxy=${var.https_proxy}",
       "no_proxy=${var.no_proxy}",
       "pkg_branch=quarterly"
       ] : (
       var.os_name == "solaris" ? [] : [
-        "HOME_DIR=/home/vagrant",
+        "HOME_DIR=${local.home_dir}",
         "http_proxy=${var.http_proxy}",
         "https_proxy=${var.https_proxy}",
         "no_proxy=${var.no_proxy}"
       ]
     )
-    execute_command = var.os_name == "freebsd" ? "echo 'vagrant' | {{.Vars}} su -m root -c 'sh -eux {{.Path}}'" : (
-      var.os_name == "solaris" ? "echo 'vagrant'|sudo -S bash {{.Path}}" : "echo 'vagrant' | {{ .Vars }} sudo -S -E sh -eux '{{ .Path }}'"
+    execute_command = var.os_name == "freebsd" ? "echo ${var.ssh_username} | {{.Vars}} su -m root -c 'sh -eux {{.Path}}'" : (
+      var.os_name == "solaris" ? "echo ${var.ssh_username}|sudo -S bash {{.Path}}" : "echo ${var.ssh_username} | {{ .Vars }} sudo -S -E sh -eux '{{ .Path }}'"
     )
     expect_disconnect = true
     scripts           = local.scripts
@@ -121,6 +123,41 @@ build {
     )
   }
 }
+
+
+
+
+
+# source "null" "test" {
+#   communicator = "none"
+# }
+
+
+# build {
+#   name = "test"
+
+#   sources = [
+#     "source.null.test"
+#   ]
+
+#   provisioner "shell-local" {
+#     environment_vars = [
+#       "HOME_DIR=${local.home_dir}", // 计算得出用户
+#       "http_proxy=${var.http_proxy}",
+#       "https_proxy=${var.https_proxy}",
+#       "no_proxy=${var.no_proxy}"
+#     ]
+
+#     inline = [
+#       "echo HomeDir is ${local.home_dir},other is %HOME_DIR%",
+#     ]
+
+#     execute_command = var.os_name == "freebsd" ? "echo ${var.ssh_username} | {{.Vars}} su -m root -c 'sh -eux {{.Path}}'" : (
+#       var.os_name == "solaris" ? "echo ${var.ssh_username}|sudo -S bash {{.Path}}" : "echo ${var.ssh_username} | {{ .Vars }} sudo -S -E sh -eux '{{ .Path }}'"
+#     )
+#   }
+
+# }
 
 
 # build {

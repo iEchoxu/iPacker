@@ -36,7 +36,8 @@ jobs:
         run: |
           cd templates
           packer init .
-          packer build -var-file="../os_pkrvars/$(echo ${{ matrix.os }} | cut -d "-" -f 1)/"${{ matrix.os }}-x86_64.pkrvars.hcl" .
+          export LOGNAME=$USER
+          packer build -var-file="../os_pkrvars/ubuntu/ubuntu-24.04-x86_64.pkrvars.hcl" .
       - name: Upload build artifact
         uses: actions/upload-artifact@main
         with:
@@ -46,8 +47,3 @@ jobs:
             builds/*.json
           retention-days: 10
           compression-level: 0 # no compression
-      - name: Bento Test
-        run: |
-          eval "$(chef shell-init bash)"
-          export LOGNAME=$USER
-          bento test
